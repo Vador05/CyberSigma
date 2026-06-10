@@ -1,0 +1,55 @@
+title: LiteLLM SSRF-to-RCE Exploit Chain
+id: cd07ff85-bd45-4f7d-a33d-2140b1fc3ef7
+status: experimental
+description: >
+    Detects SSRF-to-RCE exploitation attempts against LiteLLM and AI gateway
+    deployments: abuse of /config/update and /model/new endpoints, model URIs
+    pointing to internal metadata services (IMDS), loopback callback URIs in
+    success/failure handlers, and AWS/GCP metadata service probes. Actively
+    exploited to achieve RCE on cloud-hosted AI inference infrastructure.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://github.com/BerriAI/litellm/security
+    - https://attack.mitre.org/techniques/T1190/
+tags:
+    - attack.initial_access
+    - attack.t1190
+    - attack.lateral_movement
+    - attack.t1552.001
+    - attack.execution
+    - attack.t1059
+logsource:
+    category: webserver
+detection:
+    config_update_abuse:
+        cs-uri-stem|contains:
+            - '/config/update'
+            - '/model/new'
+    imds_probe:
+        keywords|contains:
+            - '169.254.169.254'
+            - '169.254.170.2'
+            - 'metadata.google.internal'
+            - 'metadata.goog'
+            - '/latest/meta-data/iam/security-credentials'
+    loopback_callback:
+        keywords|contains:
+            - 'success_callback'
+            - 'failure_callback'
+        keywords2|contains:
+            - '127.'
+            - 'localhost'
+            - '0.0.0.0'
+    model_ssrf:
+        keywords|re: 'model[_\s"''=:]+https?://(?:169\.254\.|127\.|0\.0\.0\.0)'
+    xff_spoof:
+        cs(X-Forwarded-For)|startswith:
+            - '127.'
+            - '10.'
+            - '192.168.'
+    condition: config_update_abuse or imds_probe or loopback_callback or model_ssrf or xff_spoof
+falsepositives:
+    - Internal health check probes from within the same subnet
+    - Authorized security scanning of AI gateway infrastructure
+level: critical

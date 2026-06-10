@@ -1,0 +1,61 @@
+title: AI-Driven Lateral Movement and Reconnaissance Patterns
+id: a518c835-2130-41ad-9743-97498f152b16
+status: experimental
+description: >
+    Detects behavioral signatures of LLM-driven or automated lateral movement
+    in auth and syslog: sequential host sweeps with incrementing last-octet IPs,
+    systematic multi-port reconnaissance targeting common attack surfaces, and
+    structured recon-to-exploit event sequences indicative of AI-reasoned attack
+    planning rather than manual operator behavior.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/techniques/T1046/
+tags:
+    - attack.discovery
+    - attack.t1046
+    - attack.lateral_movement
+    - attack.t1021
+    - attack.reconnaissance
+    - attack.t1595
+logsource:
+    product: linux
+    service: auth
+detection:
+    sequential_recon:
+        keywords|contains:
+            - 'scan'
+            - 'probe'
+            - 'nmap'
+            - 'masscan'
+            - 'discover'
+    exploit_followup:
+        keywords|contains:
+            - 'exploit'
+            - 'shell'
+            - 'payload'
+            - 'overflow'
+            - 'inject'
+            - 'privilege'
+            - 'escalat'
+    recon_ports:
+        keywords|contains:
+            - 'port 22'
+            - 'port 445'
+            - 'port 3389'
+            - 'port 5985'
+            - 'port 5986'
+    auth_failures_burst:
+        keywords|contains:
+            - 'Invalid user'
+            - 'Failed password'
+            - 'authentication failure'
+            - 'Connection refused'
+        keywords2|contains:
+            - 'from'
+    condition: (sequential_recon and exploit_followup) or (auth_failures_burst and recon_ports)
+falsepositives:
+    - Authorized penetration testing activity
+    - Security scanning tools (Nessus, Qualys) with proper scheduling
+    - Network monitoring solutions
+level: medium

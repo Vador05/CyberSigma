@@ -1,0 +1,55 @@
+title: TeamPCP NPM Supply Chain Campaign IOCs
+id: 53db4a1b-aef9-4c59-86ae-01ca7c841b4b
+status: experimental
+description: >
+    Detects TeamPCP supply chain campaign indicators in CI/CD and npm audit logs:
+    known malicious package names (colors2, node-colors, npmutils, load-yaml,
+    log-util, electron-native-notify), DNS exfiltration via Burp Collaborator
+    and interactsh, environment variable exfiltration patterns, and NPM token
+    credential theft attempts.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/techniques/T1195/001/
+tags:
+    - attack.initial_access
+    - attack.t1195.001
+    - attack.exfiltration
+    - attack.t1048.001
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    teampcp_packages:
+        keywords|contains:
+            - 'colors2'
+            - 'node-colors'
+            - 'npmutils'
+            - 'load-yaml'
+            - 'log-util'
+            - 'electron-native-notify'
+            - 'discord.js@11'
+    dns_exfil:
+        keywords|contains:
+            - '.burpcollaborator.net'
+            - '.interact.sh'
+    env_exfil:
+        keywords|contains:
+            - 'process.env.HOME'
+            - 'NPM_TOKEN'
+    reverse_shell:
+        keywords|contains:
+            - 'bash -i >& /dev/tcp/'
+            - 'stratum+tcp://'
+    postinstall_exec:
+        keywords|contains:
+            - 'postinstall'
+        keywords2|contains:
+            - 'curl'
+            - 'wget'
+            - 'bash -c'
+            - 'powershell -Enc'
+    condition: teampcp_packages or dns_exfil or (env_exfil and postinstall_exec) or reverse_shell
+falsepositives:
+    - Legacy packages with similar names in private registries
+level: high

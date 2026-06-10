@@ -1,0 +1,53 @@
+title: AI Agent Over-Privileged Access Policy Violation
+id: a518c835-2130-41ad-9743-97498f152b17
+status: experimental
+description: >
+    Detects over-privileged or policy-violating actions by autonomous AI agents
+    in audit logs: destructive database operations (DROP, TRUNCATE, DELETE),
+    Kubernetes resource deletion, privilege escalation via user/role creation,
+    and mass data export operations. Designed for environments where AI agents
+    interact with Postgres, Kubernetes, or enterprise APIs.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/techniques/T1078/
+tags:
+    - attack.impact
+    - attack.t1485
+    - attack.privilege_escalation
+    - attack.t1078
+    - attack.exfiltration
+    - attack.t1048
+logsource:
+    product: application
+    definition: AI agent audit logs with agent_id, timestamp, and action fields
+detection:
+    destructive_db:
+        keywords|contains:
+            - 'DROP TABLE'
+            - 'DROP DATABASE'
+            - 'TRUNCATE'
+            - 'DELETE FROM'
+            - 'ALTER TABLE'
+    k8s_destructive:
+        keywords|contains:
+            - 'kubectl delete'
+            - 'kubectl exec'
+            - 'kubectl patch'
+    privilege_escalation:
+        keywords|contains:
+            - 'CREATE USER'
+            - 'GRANT'
+            - 'CREATE ROLE'
+            - 'ASSIGN ROLE'
+    data_export:
+        keywords|contains:
+            - 'pg_dump'
+            - 'pg_restore'
+            - 'kubectl apply'
+    condition: destructive_db or k8s_destructive or privilege_escalation or data_export
+falsepositives:
+    - Authorized DBA operations during maintenance windows
+    - Approved Kubernetes deployments via CI/CD
+    - Scheduled database backup jobs
+level: high

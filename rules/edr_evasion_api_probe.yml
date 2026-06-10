@@ -1,0 +1,52 @@
+title: Automated EDR Evasion API Probing
+id: 632547bb-8326-4e5a-8438-6a3f152b9aa1
+status: experimental
+description: >
+    Detects automated EDR evasion reconnaissance patterns: systematic use of
+    Windows API calls associated with EDR bypass techniques including process
+    enumeration, memory manipulation, hook inspection, and registry access in
+    rapid burst sequences. Indicative of AI-assisted or automated evasion tooling
+    mapping EDR coverage before payload deployment.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/techniques/T1562/001/
+tags:
+    - attack.defense_evasion
+    - attack.t1562.001
+    - attack.discovery
+    - attack.t1057
+    - attack.t1012
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    evasion_api_burst:
+        keywords|contains:
+            - 'NtQuerySystemInformation'
+            - 'EnumProcesses'
+            - 'CreateRemoteThread'
+            - 'VirtualAllocEx'
+            - 'WriteProcessMemory'
+            - 'SetWindowsHookEx'
+            - 'LoadLibrary'
+            - 'OpenProcess'
+            - 'ReadProcessMemory'
+            - 'NtOpenProcess'
+            - 'DeviceIoControl'
+    registry_enum:
+        keywords|contains:
+            - 'RegOpenKey'
+            - 'RegQueryValue'
+            - 'RegEnumKey'
+    deep_enum_chain:
+        keywords|contains:
+            - 'EnumProcesses'
+            - 'EnumWindows'
+            - 'EnumChildWindows'
+    condition: evasion_api_burst or (registry_enum and deep_enum_chain)
+falsepositives:
+    - Legitimate security software and AV engines performing process scanning
+    - System management and monitoring tools
+    - EDR agents themselves
+level: high

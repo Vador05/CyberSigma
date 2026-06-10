@@ -1,0 +1,68 @@
+title: Malicious NPM Package Supply Chain Attack
+id: 53db4a1b-aef9-4c59-86ae-01ca7c841b3a
+status: experimental
+description: >
+    Detects malicious npm package indicators in CI/CD and npm install logs:
+    postinstall hooks executing curl/wget/bash, environment variable exfiltration,
+    base64-decoded payload execution, SSH key and AWS credential access, and
+    TeamPCP supply chain campaign package names.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/techniques/T1195/001/
+tags:
+    - attack.initial_access
+    - attack.t1195.001
+    - attack.exfiltration
+    - attack.t1048
+    - attack.execution
+    - attack.t1059
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    postinstall_exec:
+        keywords|contains:
+            - 'postinstall'
+        keywords2|contains:
+            - 'curl'
+            - 'wget'
+            - 'bash -'
+            - 'sh -'
+            - 'node -e'
+    base64_exec:
+        keywords|contains:
+            - 'base64 -d'
+            - 'base64 --decode'
+            - 'Buffer.from'
+        keywords2|contains:
+            - '| sh'
+            - '| bash'
+            - 'eval'
+    credential_access:
+        keywords|contains:
+            - '.ssh/id_rsa'
+            - '~/.aws/credentials'
+            - '$AWS_SECRET'
+            - 'process.env.HOME'
+            - 'NPM_TOKEN'
+    teampcp_packages:
+        keywords|contains:
+            - 'colors2'
+            - 'node-colors'
+            - 'npmutils'
+            - 'load-yaml'
+            - 'log-util'
+            - 'electron-native-notify'
+    reverse_shell:
+        keywords|contains:
+            - 'bash -i >& /dev/tcp/'
+            - 'stratum+tcp://'
+    metadata_probe:
+        keywords|contains:
+            - '169.254.169.254'
+    condition: postinstall_exec or base64_exec or credential_access or teampcp_packages or reverse_shell or metadata_probe
+falsepositives:
+    - Legitimate packages using postinstall scripts for build steps
+    - Developer tooling with curl-based installers
+level: high

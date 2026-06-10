@@ -1,0 +1,54 @@
+title: SEO-Poisoned DNS Lookup - Remus Stealer and SessionGate
+id: b0c7164e-bf55-4be7-a026-6dde5c783311
+status: experimental
+description: >
+    Detects DNS lookups to domains associated with SEO-poisoned fake open-source
+    package sites delivering Remus Stealer and SessionGate via traffic distribution
+    systems. Covers TDS redirector domains, typosquatted package registry domains,
+    and known C2 hostnames on high-risk TLDs.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/techniques/T1583/001/
+tags:
+    - attack.initial_access
+    - attack.t1566
+    - attack.command_and_control
+    - attack.t1583.001
+    - attack.resource_development
+    - attack.t1608
+logsource:
+    category: dns
+detection:
+    tds_redirector:
+        dns.question.name|re: '(?i)(?:track|redirect|go|click|traffic)\d*\.[a-z0-9-]{4,}\.[a-z]{2,6}'
+    high_risk_tld:
+        dns.question.name|endswith:
+            - '.xyz'
+            - '.top'
+            - '.club'
+            - '.icu'
+            - '.site'
+            - '.online'
+            - '.buzz'
+    typosquat_registry:
+        dns.question.name|contains:
+            - 'pypi-mirror'
+            - 'pypi-cdn'
+            - 'npm-mirror'
+            - 'npm-cdn'
+            - 'npm-registry'
+            - 'pip-install'
+            - 'pkg-install'
+    known_c2:
+        dns.question.name|contains:
+            - 'remus'
+            - 'sessiongate'
+            - 'sgate'
+    pkg_typosquat:
+        dns.question.name|re: '(?i)(?:numpy|pandas|requests|flask|django|react|lodash|axios|express|webpack)[-_](?:security|update|patch|fix|cdn)'
+    condition: tds_redirector or (high_risk_tld and typosquat_registry) or known_c2 or pkg_typosquat
+falsepositives:
+    - Legitimate use of .xyz/.top TLDs for commercial domains
+    - CDN domains that match redirector patterns
+level: medium

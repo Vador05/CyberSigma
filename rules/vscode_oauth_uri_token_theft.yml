@@ -1,0 +1,37 @@
+title: VS Code URI Handler OAuth Token Theft
+id: 6c12a9f0-aa90-4f04-902f-5ebdf2e84090
+status: experimental
+description: >
+    Detects GitHub OAuth token theft via malicious vscode:// deep link manipulation:
+    OAuth code parameters in URI handlers, redirect URI manipulation, GitHub auth
+    callback interception, token values exposed in vscode:// URIs, and state
+    parameter tampering.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/techniques/T1550/001/
+tags:
+    - attack.credential_access
+    - attack.t1550.001
+    - attack.t1528
+    - attack.initial_access
+    - attack.t1566
+logsource:
+    category: webserver
+detection:
+    vscode_oauth_code:
+        keywords|re: 'vscode(?:-insiders)?://[^\s]*[?&]code=[A-Za-z0-9_\-]+'
+    vscode_redirect_uri:
+        keywords|re: 'vscode(?:-insiders)?://[^\s]*redirect_uri=[^\s&"''<>]+'
+    vscode_auth_callback:
+        keywords|contains:
+            - 'vscode://vscode.github-authentication/did-authenticate'
+    vscode_token_exposed:
+        keywords|re: 'vscode(?:-insiders)?://[^\s]*(token|access_token|bearer)[^\s]*'
+    vscode_github_oauth:
+        keywords|re: 'vscode(?:-insiders)?://[^\s]*github[^\s]*[?&](code|token)='
+    condition: vscode_oauth_code or vscode_redirect_uri or vscode_auth_callback or vscode_token_exposed or vscode_github_oauth
+falsepositives:
+    - Legitimate VS Code GitHub authentication flows
+    - OAuth callback handling in development environments
+level: high

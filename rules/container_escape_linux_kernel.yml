@@ -1,0 +1,64 @@
+title: Linux Container Escape and Kernel Privilege Escalation
+id: 0c7dab63-7d60-48eb-a14a-23cbed92d5c6
+status: experimental
+description: >
+    Detects container breakout and kernel privilege-escalation techniques in Linux
+    audit and syslog output: namespace escape via nsenter/unshare, nf_tables UAF
+    writes, /proc/self/mem access, OverlayFS upperdir traversal, runc fd escape,
+    and cgroup release_agent abuse.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/techniques/T1611/
+tags:
+    - attack.privilege_escalation
+    - attack.t1068
+    - attack.defense_evasion
+    - attack.t1611
+logsource:
+    product: linux
+    service: auditd
+detection:
+    namespace_escape:
+        keywords|contains:
+            - 'nsenter'
+            - 'setns'
+    unshare_escape:
+        keywords|contains:
+            - 'unshare --mount'
+            - 'unshare --pid'
+            - 'unshare --net'
+    cap_sys_admin:
+        keywords|re: 'cap_effective=(?:3fffffffff|1ffffffffff|ffffffffffffffff)'
+    nf_tables_write:
+        keywords|contains:
+            - 'nf_tables'
+            - 'NFNL_SUBSYS'
+            - 'nfnetlink'
+    proc_mem_write:
+        keywords|contains:
+            - '/proc/self/mem'
+            - '/proc/'
+        keywords2|contains:
+            - '/mem'
+    overlay_traversal:
+        keywords|contains:
+            - 'upperdir'
+            - 'ovl_copy_up'
+            - 'overlayfs'
+    runc_escape:
+        keywords|contains:
+            - 'memfd_create'
+            - '/proc/self/exe'
+        keywords2|contains:
+            - 'runc'
+    cgroup_escape:
+        keywords|contains:
+            - 'release_agent'
+            - 'notify_on_release'
+    condition: namespace_escape or unshare_escape or cap_sys_admin or nf_tables_write or overlay_traversal or runc_escape or cgroup_escape
+falsepositives:
+    - Container orchestration platforms managing namespaces legitimately
+    - System administrators using nsenter for debugging
+    - Kubernetes node operations
+level: high

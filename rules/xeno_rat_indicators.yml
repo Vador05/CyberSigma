@@ -1,0 +1,76 @@
+title: Xeno RAT Malware Indicators
+id: be9b916d-4e27-4835-8c9b-5953c44994cf
+status: experimental
+description: >
+    Detects Xeno RAT malware indicators across multiple tactics: C2 registration
+    beacons, persistence via registry run keys and scheduled tasks, process injection
+    APIs, keylogging, screenshot capture, finance sector reconnaissance, and custom
+    C2 protocol headers. Tuned for government and finance sector environments.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/software/
+tags:
+    - attack.command_and_control
+    - attack.t1071.001
+    - attack.persistence
+    - attack.t1547.001
+    - attack.t1053.005
+    - attack.defense_evasion
+    - attack.t1055
+    - attack.collection
+    - attack.t1056.001
+    - attack.t1113
+    - attack.t1005
+logsource:
+    product: windows
+    category: process_creation
+detection:
+    c2_registration:
+        keywords|contains:
+            - 'xeno_register'
+            - 'xeno_checkin'
+            - 'xrat_connect'
+            - '/gate.php'
+            - '/register'
+    persistence_registry:
+        keywords|contains:
+            - 'HKCU\Software\Microsoft\Windows\CurrentVersion\Run'
+            - 'HKLM\Software\Microsoft\Windows\CurrentVersion\Run'
+        keywords2|contains:
+            - 'xenorat'
+            - 'xrat'
+            - 'updater'
+            - 'updateservice'
+    scheduled_task:
+        keywords|contains:
+            - 'schtasks'
+            - '/create'
+        keywords2|contains:
+            - 'xenorat'
+            - 'xrat'
+    process_injection:
+        keywords|contains:
+            - 'VirtualAllocEx'
+            - 'WriteProcessMemory'
+            - 'CreateRemoteThread'
+            - 'NtCreateThreadEx'
+            - 'QueueUserAPC'
+    c2_header:
+        keywords|re: 'X-(?:Session|Bot|ID|Token|Auth):\s*[A-Fa-f0-9]{16,}'
+    finance_recon:
+        keywords|contains:
+            - 'swift'
+            - 'iban'
+            - 'routing number'
+            - 'wire transfer'
+        keywords2|contains:
+            - 'dump'
+            - 'exfil'
+            - 'collect'
+    condition: c2_registration or persistence_registry or scheduled_task or process_injection or c2_header or finance_recon
+falsepositives:
+    - Legitimate security software using similar API calls
+    - Penetration testing tools
+    - Remote administration software
+level: high

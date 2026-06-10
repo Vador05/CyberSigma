@@ -1,0 +1,59 @@
+title: WebLogic JNDI/T3 Exploitation (CVE-2024-21182)
+id: 251eac86-6c27-4169-a6e0-3793a48b7cda
+status: experimental
+description: >
+    Detects CVE-2024-21182 exploitation patterns in WebLogic access and server logs:
+    T3/IIOP protocol abuse, raw and URL-encoded JNDI lookups, deserialization gadget
+    signatures, vulnerable servlet paths, LDAP/RMI callback URLs, and exploit tool
+    user-agents. Actively tracked in KEV campaigns.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://www.oracle.com/security-alerts/
+    - https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+tags:
+    - attack.initial_access
+    - attack.t1190
+    - attack.execution
+    - attack.t1059
+logsource:
+    category: webserver
+detection:
+    t3_iiop:
+        cs-uri-query|contains:
+            - 't3://'
+            - 't3s://'
+            - 'iiop://'
+            - '/wls-wsat/'
+            - '/uddiexplorer/'
+            - '/bea_wls_internal/'
+    jndi_lookup:
+        cs-uri-query|contains:
+            - '${jndi:'
+            - '%24%7bjndi%3a'
+            - '%24%7Bjndi%3A'
+            - '${jndi'
+    deser_gadget:
+        cs-uri-query|contains:
+            - 'aced0005'
+            - 'ClassPathXmlApplicationContext'
+            - 'FileSystemXmlApplicationContext'
+            - 'weblogic.cluster.singleton'
+    vulnerable_paths:
+        cs-uri-stem|contains:
+            - '/wls-wsat/CoordinatorPortType'
+            - '/async/AsyncResponseService'
+            - '/wls-wsat/RegistrationRequesterPortType'
+    exploit_ua:
+        cs(User-Agent)|contains:
+            - 'zgrab'
+            - 'Nuclei'
+            - 'Go-http-client/1'
+            - 'python-requests'
+    ldap_callback:
+        cs-uri-query|re: '(?:ldap|rmi|corba)://[0-9a-zA-Z._-]+:\d+/'
+    condition: t3_iiop or jndi_lookup or deser_gadget or vulnerable_paths or (exploit_ua and ldap_callback)
+falsepositives:
+    - Security scanners running authorized vulnerability assessments
+    - WebLogic internal T3 cluster communication
+level: critical

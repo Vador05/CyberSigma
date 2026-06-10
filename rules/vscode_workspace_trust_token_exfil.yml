@@ -1,0 +1,56 @@
+title: VS Code Workspace Trust Abuse and GitHub Token Exfiltration
+id: 5baa56bb-a18a-4bbc-826b-202b7e26509a
+status: experimental
+description: >
+    Detects GitHub token exfiltration via VS Code workspace trust abuse in CI/CD
+    pipeline logs: suspicious vscode:// URI handler invocations, malicious
+    .vscode/settings.json patterns (credential injection, exec hooks, remote URLs),
+    GitHub token patterns in log output, and token exfiltration via curl.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/techniques/T1528/
+tags:
+    - attack.credential_access
+    - attack.t1528
+    - attack.defense_evasion
+    - attack.t1562
+    - attack.exfiltration
+    - attack.t1048
+logsource:
+    category: process_creation
+detection:
+    vscode_uri_invocation:
+        keywords|re: 'vscode://[^\s"''<>]{10,}'
+    settings_token:
+        keywords|contains:
+            - '.vscode/settings.json'
+        keywords2|contains:
+            - 'GITHUB_TOKEN'
+            - 'github_token'
+            - 'ghp_'
+            - 'ghs_'
+    settings_exec_hook:
+        keywords|contains:
+            - '.vscode/settings.json'
+            - 'terminal.integrated.env'
+        keywords2|contains:
+            - 'curl'
+            - 'wget'
+            - 'bash'
+            - 'python'
+    github_token_exposed:
+        keywords|re: '(?:GITHUB_TOKEN|GH_TOKEN)\s*[=:]\s*(?:ghp_|ghs_|github_pat_)[A-Za-z0-9_]+'
+    token_exfil_curl:
+        keywords|contains:
+            - 'curl'
+            - 'GITHUB_TOKEN'
+    workspace_trust_disabled:
+        keywords|contains:
+            - 'security.workspace.trust.enabled'
+            - 'false'
+    condition: vscode_uri_invocation or settings_token or settings_exec_hook or github_token_exposed or token_exfil_curl or workspace_trust_disabled
+falsepositives:
+    - Legitimate CI/CD pipelines using GitHub tokens for authenticated operations
+    - VS Code Remote development environments
+level: high

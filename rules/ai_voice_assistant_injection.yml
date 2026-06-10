@@ -1,0 +1,66 @@
+title: AI Voice Assistant Prompt Injection via Notification
+id: f0e186bc-723c-4898-b527-21c72c21eddf
+status: experimental
+description: >
+    Detects prompt injection attacks against AI voice assistants delivered via
+    notification text: urgency-driven command verbs targeting sensitive actions
+    (email forwarding, credential sharing, outbound calls to unknown numbers),
+    privilege invocation patterns, and data exfiltration references in assistant
+    action logs. Covers notification-borne injection of Gemini and similar assistants.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/techniques/T1598/
+tags:
+    - attack.initial_access
+    - attack.t1598
+    - attack.collection
+    - attack.t1530
+    - attack.impact
+    - attack.t1565
+logsource:
+    product: application
+    definition: AI assistant action logs, notification processing logs
+detection:
+    injection_verbs_urgent:
+        keywords|contains:
+            - 'forward all emails'
+            - 'share contacts'
+            - 'send password'
+            - 'transfer credentials'
+            - 'export token'
+            - 'upload api key'
+        keywords2|contains:
+            - 'immediately'
+            - 'urgent'
+            - 'now'
+            - 'asap'
+            - 'emergency'
+    outbound_call_injection:
+        keywords|contains:
+            - 'call unknown'
+            - 'dial external'
+            - 'contact unknown number'
+    privilege_override:
+        keywords|contains:
+            - 'override security'
+            - 'bypass admin'
+            - 'disable protection'
+            - 'elevated permission'
+    data_exfil_ref:
+        keywords|contains:
+            - 'private key'
+            - 'api key'
+            - 'access token'
+            - 'ssn'
+            - 'credit card'
+        keywords2|contains:
+            - 'send'
+            - 'share'
+            - 'forward'
+            - 'upload'
+    condition: injection_verbs_urgent or outbound_call_injection or privilege_override or data_exfil_ref
+falsepositives:
+    - Legitimate urgent notifications from trusted applications
+    - User-initiated actions involving sensitive data
+level: medium

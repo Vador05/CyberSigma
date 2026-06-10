@@ -1,0 +1,65 @@
+title: EDR Telemetry Gap - AI-Assisted Evasion and AD Discovery
+id: 8f0481ee-4b3c-4d95-be29-c9960866cbee
+status: experimental
+description: >
+    Detects behavioral patterns that exploit gaps in EDR telemetry coverage:
+    AI-assisted process enumeration, lateral movement via LDAP/AD discovery,
+    privilege escalation techniques, and container namespace abuse. These patterns
+    indicate active exploitation of blind spots that automated evasion tooling
+    specifically targets.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://attack.mitre.org/tactics/TA0005/
+tags:
+    - attack.defense_evasion
+    - attack.t1562
+    - attack.discovery
+    - attack.t1087
+    - attack.t1069
+    - attack.lateral_movement
+    - attack.t1021
+    - attack.privilege_escalation
+    - attack.t1068
+logsource:
+    product: linux
+    service: syslog
+detection:
+    ad_discovery:
+        keywords|contains:
+            - 'BloodHound'
+            - 'SharpHound'
+            - 'ldapdomaindump'
+            - 'adidnsdump'
+    ldap_recon:
+        keywords|contains:
+            - 'ldap_query'
+            - 'ldap_bind'
+            - 'ldap_search'
+    priv_esc:
+        keywords|contains:
+            - 'setuid'
+            - 'setgid'
+            - 'token impersonat'
+            - 'uid=0'
+            - 'CAP_SYS_ADMIN'
+            - 'seccomp_bypass'
+    process_recon:
+        keywords|contains:
+            - 'EnumProcesses'
+            - 'NtQuerySystemInformation'
+            - 'CreateRemoteThread'
+            - 'VirtualAllocEx'
+    container_abuse:
+        keywords|contains:
+            - 'pivot_root'
+            - 'cap_sys_admin'
+            - 'container_escape'
+            - 'docker_break'
+            - 'cgroup_escape'
+    condition: ad_discovery or ldap_recon or priv_esc or process_recon or container_abuse
+falsepositives:
+    - Security tools and authorized penetration testing
+    - System administrators performing legitimate inventory
+    - Container orchestration platforms
+level: medium

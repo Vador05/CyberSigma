@@ -1,0 +1,62 @@
+title: Commvault Ransomware Pre-Staging Activity
+id: b6a20889-cb31-46fe-8d36-01ddacaac0f7
+status: experimental
+description: >
+    Detects ransomware pre-staging indicators in Commvault backup infrastructure logs:
+    anomalous bulk API calls, credential enumeration, and backup schedule/job tampering.
+    Based on observed TTPs of ransomware affiliates targeting backup systems before encryption.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://www.commvault.com/security-advisories
+tags:
+    - attack.impact
+    - attack.t1490
+    - attack.credential_access
+    - attack.t1078
+    - attack.defense_evasion
+    - attack.t1562
+logsource:
+    product: commvault
+    service: application
+detection:
+    anomalous_api:
+        keywords|contains:
+            - '/identity/credentials'
+            - '/token/export'
+            - '/token/dump'
+            - 'DRBackup'
+            - 'ExportSettings'
+            - 'CommCellMigration'
+            - 'ExportEntities'
+    credential_enumeration:
+        keywords|contains:
+            - 'qlogin'
+            - 'qsdk'
+            - 'CommCell_Login'
+            - 'authentication fail'
+            - 'login fail'
+            - 'invalid password'
+            - 'createUser'
+            - 'addUser'
+            - 'resetPassword'
+            - 'renewToken'
+    schedule_tamper:
+        keywords|contains:
+            - 'disableSchedule'
+            - 'deleteSchedule'
+            - 'schedule disabled'
+            - 'killJob'
+            - 'suspendJob'
+            - 'deleteStoragePolicy'
+            - 'modifyRetention'
+            - 'retentionDays'
+            - 'stop commvault'
+            - 'GxCVD stop'
+            - 'net stop GxCVD'
+    condition: anomalous_api or credential_enumeration or schedule_tamper
+falsepositives:
+    - Legitimate Commvault administrative operations
+    - DR testing and backup policy changes
+    - Scheduled maintenance windows
+level: high

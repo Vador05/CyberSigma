@@ -1,0 +1,45 @@
+title: Netlogon RCE Exploitation Attempt (CVE-2026-41089)
+id: 2bfb299f-ad88-444c-a063-8f0e64afe7c3
+status: experimental
+description: >
+    Detects CVE-2026-41089 Netlogon RCE exploitation attempts via suspicious
+    Event ID 4742/5805 patterns and anomalous Netlogon RPC signatures including
+    machine account password resets, failed secure channel establishment, and
+    anonymous/null-session Netlogon access.
+author: CyberSigma / AgentForge
+date: 2026/06/10
+references:
+    - https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-41089
+tags:
+    - attack.lateral_movement
+    - attack.t1210
+    - attack.privilege_escalation
+    - attack.t1068
+logsource:
+    product: windows
+    service: security
+detection:
+    event_4742:
+        EventID: 4742
+        keywords|contains:
+            - 'password last set'
+            - 'password reset'
+            - 'anonymous'
+            - 'null session'
+    event_5805:
+        EventID: 5805
+    rpc_anomaly:
+        keywords|contains|all:
+            - 'netlogon'
+            - 'nrpc'
+    null_access:
+        keywords|contains:
+            - 'anonymouspipe'
+            - 'null session'
+            - 'credential reset'
+    condition: event_4742 or event_5805 or (rpc_anomaly and null_access)
+falsepositives:
+    - Legitimate domain controller operations during maintenance
+    - Scheduled machine account password rotations
+    - Domain trust establishment
+level: high
